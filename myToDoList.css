@@ -78,12 +78,14 @@ body{
 #todoList li {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     background: #444;
     padding: 10px 20px;
     margin-bottom: 10px;
     border-radius: 8px;
     gap: 15px; 
     color: white;
+    flex-wrap: nowrap;
 }
 
 
@@ -130,6 +132,20 @@ body{
 }
 
 .delete-btn:hover {
+    opacity: 0.8;
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    color: brown;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+
+.edit-btn:hover {
     opacity: 0.8;
 }
 

@@ -138,11 +138,16 @@ body{
 .edit-btn {
     background: none;
     border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
     color: brown;
-    font-size: 18px;
     cursor: pointer;
+    font-size: 18px;
     transition: 0.2s ease;
 }
+
 
 
 .edit-btn:hover {
@@ -186,4 +191,5 @@ body{
         transform: scale(0.95);
     }
 }
+
 

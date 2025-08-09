@@ -23,11 +23,11 @@ function addTask() {
 function renderTask(taskObj) {
     const li = document.createElement("li");
     li.dataset.id = String(taskObj.id);
-    li.draggable = true;                  
+    li.draggable = true;
 
     const handle = document.createElement("span");
     handle.className = "drag-handle";
-    handle.textContent = "⠿";             
+    handle.textContent = "⠿";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -97,6 +97,8 @@ function renderTask(taskObj) {
 
     li.addEventListener("dragstart", (e) => {
         li.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move"; 
+
         const crt = li.cloneNode(true);
         crt.style.width = getComputedStyle(li).width;
         crt.style.opacity = "0.8";
@@ -109,7 +111,7 @@ function renderTask(taskObj) {
 
     li.addEventListener("dragend", () => {
         li.classList.remove("dragging");
-        persistOrderFromDOM();
+        persistOrderFromDOM(); 
     });
 
     li.appendChild(handle);
@@ -154,6 +156,7 @@ function getDragAfterElement(container, y) {
 
 todoList.addEventListener("dragover", (e) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     const afterElement = getDragAfterElement(todoList, e.clientY);
     const dragging = document.querySelector(".dragging");
     if (!dragging) return;
@@ -167,13 +170,18 @@ todoList.addEventListener("dragover", (e) => {
     }
 });
 
+todoList.addEventListener("drop", () => {
+    persistOrderFromDOM();
+});
+
 todoList.addEventListener("dragleave", () => {
     [...todoList.children].forEach(li => li.classList.remove("reorder-shadow"));
 });
 
 function persistOrderFromDOM() {
     const order = [...todoList.children].map(li => Number(li.dataset.id));
-    tasks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    const pos = new Map(order.map((id, i) => [id, i]));
+    tasks.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
     saveTasks();
 }
 
@@ -185,9 +193,12 @@ todoText.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
-    const savedTasks = JSON.parse(localStorage.getItem("todoTasks"));
-    if (savedTasks) {
-        tasks = savedTasks;
-        tasks.forEach(task => renderTask(task));
+    const saved = localStorage.getItem("todoTasks");
+    try {
+        const savedTasks = saved ? JSON.parse(saved) : [];
+        tasks = Array.isArray(savedTasks) ? savedTasks : [];
+    } catch {
+        tasks = [];
     }
+    tasks.forEach(task => renderTask(task));
 });

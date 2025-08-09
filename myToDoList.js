@@ -22,6 +22,12 @@ function addTask() {
 
 function renderTask(taskObj) {
     const li = document.createElement("li");
+    li.dataset.id = String(taskObj.id);
+    li.draggable = true;                  
+
+    const handle = document.createElement("span");
+    handle.className = "drag-handle";
+    handle.textContent = "⠿";             
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -70,16 +76,13 @@ function renderTask(taskObj) {
                 taskObj.text = newText;
                 saveTasks();
             }
-
             taskText.textContent = taskObj.text;
             li.replaceChild(taskText, input);
         }
 
         input.addEventListener("blur", finishEditing);
         input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                finishEditing();
-            }
+            if (e.key === "Enter") finishEditing();
         });
     });
 
@@ -92,6 +95,24 @@ function renderTask(taskObj) {
         }, 400);
     });
 
+    li.addEventListener("dragstart", (e) => {
+        li.classList.add("dragging");
+        const crt = li.cloneNode(true);
+        crt.style.width = getComputedStyle(li).width;
+        crt.style.opacity = "0.8";
+        crt.style.position = "absolute";
+        crt.style.top = "-9999px";
+        document.body.appendChild(crt);
+        e.dataTransfer.setDragImage(crt, 20, 20);
+        setTimeout(() => document.body.removeChild(crt), 0);
+    });
+
+    li.addEventListener("dragend", () => {
+        li.classList.remove("dragging");
+        persistOrderFromDOM();
+    });
+
+    li.appendChild(handle);
     li.appendChild(checkbox);
     li.appendChild(taskText);
     li.appendChild(actionWrapper);
@@ -118,13 +139,49 @@ function saveTasks() {
     localStorage.setItem("todoTasks", JSON.stringify(tasks));
 }
 
+function getDragAfterElement(container, y) {
+    const els = [...container.querySelectorAll("li:not(.dragging)")];
+    return els.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - (box.top + box.height / 2);
+        if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+}
+
+todoList.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const afterElement = getDragAfterElement(todoList, e.clientY);
+    const dragging = document.querySelector(".dragging");
+    if (!dragging) return;
+    [...todoList.children].forEach(li => li.classList.remove("reorder-shadow"));
+
+    if (afterElement == null) {
+        todoList.appendChild(dragging);
+    } else {
+        afterElement.classList.add("reorder-shadow");
+        todoList.insertBefore(dragging, afterElement);
+    }
+});
+
+todoList.addEventListener("dragleave", () => {
+    [...todoList.children].forEach(li => li.classList.remove("reorder-shadow"));
+});
+
+function persistOrderFromDOM() {
+    const order = [...todoList.children].map(li => Number(li.dataset.id));
+    tasks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    saveTasks();
+}
+
 addBtn.addEventListener('click', addTask);
 clearBtn.addEventListener('click', clearCompleted);
 
 todoText.addEventListener('keydown', (event) => {
-    if (event.key === "Enter") {
-        addTask();
-    }
+    if (event.key === "Enter") addTask();
 });
 
 window.addEventListener("DOMContentLoaded", () => {
